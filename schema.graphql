@@ -1,3 +1,14 @@
+type GlobalState @entity {
+  "Singleton entity with id 0"
+  id: ID!
+
+  messageCount: BigInt!
+
+  dataPointCount: BigInt!
+
+  indexerDataPointCount: BigInt!
+}
+
 type OracleMessage @entity {
   "Transaction hash the message was posted"
   id: ID!
@@ -5,4 +16,28 @@ type OracleMessage @entity {
   payload: String!
   "Epoch timestamp (in seconds) the message was posted to chain"
   createdAt: BigInt!
+}
+
+type MessageDataPoint @entity {
+  id: ID!
+
+  rawData: String!
+
+  ipfsHash: String!
+
+  indexerDataPointCount: BigInt!
+
+  timestamp: BigInt!
+
+  #indexerDataPoints: [IndexerDataPoint!]! @derivedField(from:"messageDataPoint")
+
+  oracleMessage: OracleMessage!
+}
+
+type IndexerDataPoint @entity {
+  id: ID!
+
+  messageDataPoint: MessageDataPoint!
+
+  rawData: String!
 }
