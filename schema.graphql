@@ -50,6 +50,26 @@ type IndexerDataPoint implements DataPoint @entity {
   rawData: String!
 
   indexer: Indexer
+
+  subgraphDeployment: SubgraphDeployment
+
+  # Parsed fields
+  avg_indexer_blocks_behind: BigDecimal!
+  avg_indexer_latency_ms: BigDecimal!
+  avg_query_fee: BigDecimal!
+  end_epoch: BigDecimal!
+  indexer_url: String!
+  indexer_wallet: String!
+  max_indexer_blocks_behind: BigDecimal!
+  max_indexer_latency_ms: BigDecimal!
+  max_query_fee: BigDecimal!
+  num_indexer_200_responses: BigDecimal!
+  proportion_indexer_200_responses: BigDecimal!
+  query_count: BigDecimal!
+  start_epoch: BigDecimal!
+  stdev_indexer_latency_ms: BigDecimal!
+  subgraph_deployment_ipfs_hash: String!
+  total_query_fees: BigDecimal!
 }
 
 type QueryDataPoint implements DataPoint @entity {
@@ -60,6 +80,21 @@ type QueryDataPoint implements DataPoint @entity {
   rawData: String!
 
   subgraphDeployment: SubgraphDeployment
+
+  #Parsed fields
+  avg_gateway_latency_ms: BigDecimal!
+  avg_query_fee: BigDecimal!
+  end_epoch: BigDecimal!
+  gateway_query_success_rate: BigDecimal!
+  max_gateway_latency_ms: BigDecimal!
+  max_query_fee: BigDecimal!
+  most_recent_query_ts: BigDecimal!
+  query_count: BigDecimal!
+  start_epoch: BigDecimal!
+  stdev_gateway_latency_ms: BigDecimal!
+  subgraph_deployment_ipfs_hash: String!
+  total_query_fees: BigDecimal!
+  user_attributed_error_rate: BigDecimal!
 }
 
 type Indexer @entity {

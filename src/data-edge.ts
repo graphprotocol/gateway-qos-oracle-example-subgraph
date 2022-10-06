@@ -17,6 +17,15 @@ import {
   GlobalState
 } from "../generated/schema";
 import { JSON_TOPICS, BIGINT_ONE, BIGINT_ZERO } from "./constants";
+import {
+  jsonToString,
+  jsonToBigInt,
+  jsonObjectToString,
+  jsonValueToBigDecimal,
+  jsonValueToString,
+  createIndexer,
+  createDeployment
+} from "./helpers";
 
 export function handleSubmitQoSPayload(call: SubmitQoSPayloadCall): void {
   let entity = OracleMessage.load(call.transaction.hash.toHexString());
@@ -91,7 +100,7 @@ export function processIpfsHash(
     indexerDataPointCount = BigInt.fromI32(ipfsDataArray.length);
 
     if (topic.includes("indexer")) {
-      for(let i = 0; i < ipfsDataArray.length; i++) {
+      for (let i = 0; i < ipfsDataArray.length; i++) {
         createIndexerDataPoint(
           [messageDataPoint.id, i.toString()].join("-"),
           ipfsDataArray[i],
@@ -99,7 +108,7 @@ export function processIpfsHash(
         );
       }
     } else if (topic.includes("query")) {
-      for(let i = 0; i < ipfsDataArray.length; i++) {
+      for (let i = 0; i < ipfsDataArray.length; i++) {
         createQueryDataPoint(
           [messageDataPoint.id, i.toString()].join("-"),
           ipfsDataArray[i],
@@ -125,6 +134,74 @@ export function createIndexerDataPoint(
   let indexerDataPoint = new IndexerDataPoint(id);
   indexerDataPoint.rawData = jsonObjectToString(jsonData);
   indexerDataPoint.messageDataPoint = messageID;
+
+  if (jsonData.kind == JSONValueKind.OBJECT) {
+    let jsonDataObject = jsonData.toObject()
+    let avg_indexer_blocks_behind = jsonDataObject.get("avg_indexer_blocks_behind");
+    let avg_indexer_latency_ms = jsonDataObject.get("avg_indexer_latency_ms");
+    let avg_query_fee = jsonDataObject.get("avg_query_fee");
+    let end_epoch = jsonDataObject.get("end_epoch");
+    let indexer_url = jsonDataObject.get("indexer_url");
+    let indexer_wallet = jsonDataObject.get("indexer_wallet");
+    let max_indexer_blocks_behind = jsonDataObject.get("max_indexer_blocks_behind");
+    let max_indexer_latency_ms = jsonDataObject.get("max_indexer_latency_ms");
+    let max_query_fee = jsonDataObject.get("max_query_fee");
+    let num_indexer_200_responses = jsonDataObject.get("num_indexer_200_responses");
+    let proportion_indexer_200_responses = jsonDataObject.get(
+      "proportion_indexer_200_responses"
+    );
+    let query_count = jsonDataObject.get("query_count");
+    let start_epoch = jsonDataObject.get("start_epoch");
+    let stdev_indexer_latency_ms = jsonDataObject.get("stdev_indexer_latency_ms");
+    let subgraph_deployment_ipfs_hash = jsonDataObject.get(
+      "subgraph_deployment_ipfs_hash"
+    );
+    let total_query_fees = jsonDataObject.get("total_query_fees");
+
+    indexerDataPoint.avg_indexer_blocks_behind = jsonValueToBigDecimal(
+      avg_indexer_blocks_behind
+    );
+    indexerDataPoint.avg_indexer_latency_ms = jsonValueToBigDecimal(
+      avg_indexer_latency_ms
+    );
+    indexerDataPoint.avg_query_fee = jsonValueToBigDecimal(avg_query_fee);
+    indexerDataPoint.end_epoch = jsonValueToBigDecimal(end_epoch);
+    indexerDataPoint.indexer_url = jsonToString(indexer_url);
+    indexerDataPoint.indexer_wallet = jsonToString(indexer_wallet);
+    indexerDataPoint.max_indexer_blocks_behind = jsonValueToBigDecimal(
+      max_indexer_blocks_behind
+    );
+    indexerDataPoint.max_indexer_latency_ms = jsonValueToBigDecimal(
+      max_indexer_latency_ms
+    );
+    indexerDataPoint.max_query_fee = jsonValueToBigDecimal(max_query_fee);
+    indexerDataPoint.num_indexer_200_responses = jsonValueToBigDecimal(
+      num_indexer_200_responses
+    );
+    indexerDataPoint.proportion_indexer_200_responses = jsonValueToBigDecimal(
+      proportion_indexer_200_responses
+    );
+    indexerDataPoint.query_count = jsonValueToBigDecimal(query_count);
+    indexerDataPoint.start_epoch = jsonValueToBigDecimal(start_epoch);
+    indexerDataPoint.stdev_indexer_latency_ms = jsonValueToBigDecimal(
+      stdev_indexer_latency_ms
+    );
+    indexerDataPoint.subgraph_deployment_ipfs_hash = jsonToString(
+      subgraph_deployment_ipfs_hash
+    );
+    indexerDataPoint.total_query_fees = jsonValueToBigDecimal(total_query_fees);
+
+    if (indexerDataPoint.indexer_wallet != "") {
+      indexerDataPoint.indexer = indexerDataPoint.indexer_wallet;
+      createIndexer(indexerDataPoint.indexer!);
+    }
+    if (indexerDataPoint.subgraph_deployment_ipfs_hash != "") {
+      indexerDataPoint.subgraphDeployment =
+        indexerDataPoint.subgraph_deployment_ipfs_hash;
+      createDeployment(indexerDataPoint.subgraphDeployment!);
+    }
+  }
+
   indexerDataPoint.save();
 }
 
@@ -133,91 +210,62 @@ export function createQueryDataPoint(
   jsonData: JSONValue,
   messageID: String
 ): void {
-  let indexerDataPoint = new QueryDataPoint(id);
-  indexerDataPoint.rawData = jsonObjectToString(jsonData);
-  indexerDataPoint.messageDataPoint = messageID;
-  indexerDataPoint.save();
-}
+  let queryDataPoint = new QueryDataPoint(id);
+  queryDataPoint.rawData = jsonObjectToString(jsonData);
+  queryDataPoint.messageDataPoint = messageID;
 
-/**
- * Make sure the given JSONValue is a string and returns string it contains.
- * Returns blank string otherwise.
- */
-export function jsonToString(val: JSONValue | null): string {
-  if (val != null && val.kind === JSONValueKind.STRING) {
-    return val.toString();
-  }
-  return "";
-}
+  if (jsonData.kind == JSONValueKind.OBJECT) {
+    let jsonDataObject = jsonData.toObject()
+    let avg_gateway_latency_ms = jsonDataObject.get("avg_gateway_latency_ms");
+    let avg_query_fee = jsonDataObject.get("avg_query_fee");
+    let end_epoch = jsonDataObject.get("end_epoch");
+    let gateway_query_success_rate = jsonDataObject.get("gateway_query_success_rate");
+    let max_gateway_latency_ms = jsonDataObject.get("max_gateway_latency_ms");
+    let max_query_fee = jsonDataObject.get("max_query_fee");
+    let most_recent_query_ts = jsonDataObject.get("most_recent_query_ts");
+    let query_count = jsonDataObject.get("query_count");
+    let start_epoch = jsonDataObject.get("start_epoch");
+    let stdev_gateway_latency_ms = jsonDataObject.get("stdev_gateway_latency_ms");
+    let subgraph_deployment_ipfs_hash = jsonDataObject.get(
+      "subgraph_deployment_ipfs_hash"
+    );
+    let total_query_fees = jsonDataObject.get("total_query_fees");
+    let user_attributed_error_rate = jsonDataObject.get("user_attributed_error_rate");
 
-/**
- * Make sure the given JSONValue is a number and returns the BigInt it contains.
- * Returns BIGINT_ZERO otherwise.
- */
-export function jsonToBigInt(val: JSONValue | null): BigInt {
-  if (val != null && val.kind === JSONValueKind.NUMBER) {
-    return val.toBigInt();
-  }
-  return BIGINT_ZERO;
-}
+    queryDataPoint.avg_gateway_latency_ms = jsonValueToBigDecimal(
+      avg_gateway_latency_ms
+    );
+    queryDataPoint.avg_query_fee = jsonValueToBigDecimal(avg_query_fee);
+    queryDataPoint.end_epoch = jsonValueToBigDecimal(end_epoch);
+    queryDataPoint.gateway_query_success_rate = jsonValueToBigDecimal(
+      gateway_query_success_rate
+    );
+    queryDataPoint.max_gateway_latency_ms = jsonValueToBigDecimal(
+      max_gateway_latency_ms
+    );
+    queryDataPoint.max_query_fee = jsonValueToBigDecimal(max_query_fee);
+    queryDataPoint.most_recent_query_ts = jsonValueToBigDecimal(
+      most_recent_query_ts
+    );
+    queryDataPoint.query_count = jsonValueToBigDecimal(query_count);
+    queryDataPoint.start_epoch = jsonValueToBigDecimal(start_epoch);
+    queryDataPoint.stdev_gateway_latency_ms = jsonValueToBigDecimal(
+      stdev_gateway_latency_ms
+    );
+    queryDataPoint.subgraph_deployment_ipfs_hash = jsonToString(
+      subgraph_deployment_ipfs_hash
+    );
+    queryDataPoint.total_query_fees = jsonValueToBigDecimal(total_query_fees);
+    queryDataPoint.user_attributed_error_rate = jsonValueToBigDecimal(
+      user_attributed_error_rate
+    );
 
-/**
- * Convert TypedMap to JSON string
- */
-export function jsonObjectToString(val: JSONValue | null): String {
-  let str = "";
-  if (val != null && val.kind === JSONValueKind.OBJECT) {
-    let object = val.toObject();
-    str = "{";
-    for (let i = 0; i < object.entries.length; i++) {
-      str = str.concat(
-        '"' +
-          object.entries[i].key +
-          '":' +
-          jsonValueToString(object.entries[i].value)
-      );
-      if (i < object.entries.length - 1) {
-        str = str.concat(", ");
-      }
+    if (queryDataPoint.subgraph_deployment_ipfs_hash != "") {
+      queryDataPoint.subgraphDeployment =
+        queryDataPoint.subgraph_deployment_ipfs_hash;
+      createDeployment(queryDataPoint.subgraphDeployment!);
     }
-    str = str.concat("}");
   }
-  return str;
-}
-/*
-export enum JSONValueKind {
-  NULL = 0,
-  BOOL = 1,
-  NUMBER = 2,
-  STRING = 3,
-  ARRAY = 4,
-  OBJECT = 5,
-}
-*/
-export function jsonValueToString(val: JSONValue | null): String {
-  if (val == null) {
-    return "";
-  } else if (val.kind == JSONValueKind.NULL) {
-    return "null";
-  } else if (val.kind == JSONValueKind.BOOL) {
-    return val.toBool() ? "true" : "false";
-  } else if (val.kind == JSONValueKind.NUMBER) {
-    return BigDecimal.fromString(
-      changetype<string>(val.data as u32)
-    ).toString();
-  } else if (val.kind == JSONValueKind.STRING) {
-    return '"'.concat(val.toString()).concat('"');
-  } else if (val.kind == JSONValueKind.ARRAY) {
-    let arr = val.toArray();
-    let str = "[";
-    for (let i = 0; i < arr.length; i++) {
-      str += jsonValueToString(arr[i]);
-    }
-    str.concat("]");
-    return str;
-  } else if (val.kind == JSONValueKind.OBJECT) {
-    return jsonObjectToString(val);
-  } else {
-    return "";
-  }
+
+  queryDataPoint.save();
 }
