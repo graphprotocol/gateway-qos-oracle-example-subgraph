@@ -29,15 +29,49 @@ type MessageDataPoint @entity {
 
   timestamp: BigInt!
 
-  #indexerDataPoints: [IndexerDataPoint!]! @derivedField(from:"messageDataPoint")
+  dataPoints: [DataPoint!]! @derivedFrom(field: "messageDataPoint")
 
   oracleMessage: OracleMessage!
 }
 
-type IndexerDataPoint @entity {
+interface DataPoint @entity {
   id: ID!
 
   messageDataPoint: MessageDataPoint!
 
   rawData: String!
+}
+
+type IndexerDataPoint implements DataPoint @entity {
+  id: ID!
+
+  messageDataPoint: MessageDataPoint!
+
+  rawData: String!
+
+  indexer: Indexer
+}
+
+type QueryDataPoint implements DataPoint @entity {
+  id: ID!
+
+  messageDataPoint: MessageDataPoint!
+
+  rawData: String!
+
+  subgraphDeployment: SubgraphDeployment
+}
+
+type Indexer @entity {
+  "ETH address"
+  id: ID!
+
+  dataPoints: [IndexerDataPoint!]! @derivedFrom(field:"indexer")
+}
+
+type SubgraphDeployment @entity {
+  "IPFS Hash of the deployment"
+  id: ID!
+
+  dataPoints: [QueryDataPoint!]! @derivedFrom(field:"subgraphDeployment")
 }

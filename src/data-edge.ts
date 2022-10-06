@@ -13,6 +13,7 @@ import {
   OracleMessage,
   MessageDataPoint,
   IndexerDataPoint,
+  QueryDataPoint,
   GlobalState
 } from "../generated/schema";
 import { JSON_TOPICS, BIGINT_ONE, BIGINT_ZERO } from "./constants";
@@ -44,7 +45,7 @@ function processPayload(payload: Bytes, messageID: String): void {
         if (shouldProcessTopic(topic)) {
           let hash = jsonToString(data.get("hash"));
           let timestamp = jsonToBigInt(data.get("timestamp"));
-          processIpfsHash(hash, timestamp, messageID.concat(index.toString()));
+          processIpfsHash(hash, topic, timestamp, messageID, index);
         }
       }
     } else if (jsonData.value.kind == JSONValueKind.OBJECT) {
@@ -53,7 +54,7 @@ function processPayload(payload: Bytes, messageID: String): void {
       if (shouldProcessTopic(topic)) {
         let hash = jsonToString(data.get("hash"));
         let timestamp = jsonToBigInt(data.get("timestamp"));
-        processIpfsHash(hash, timestamp, messageID);
+        processIpfsHash(hash, topic, timestamp, messageID, 0);
       }
     }
   }
@@ -65,39 +66,48 @@ function shouldProcessTopic(topic: String): boolean {
 
 export function processIpfsHash(
   ipfsHash: String,
+  topic: String,
   timestamp: BigInt,
-  messageID: String
+  oracleMessageID: String,
+  messageIndex: i32
 ): void {
   let ipfsData = ipfs.cat(ipfsHash);
   let jsonIpfsData = json.try_fromBytes(ipfsData ? ipfsData! : Bytes.empty());
 
   let indexerDataPointCount = BIGINT_ZERO;
-  let messageDataPoint = new MessageDataPoint(messageID);
+  let messageDataPoint = new MessageDataPoint(
+    oracleMessageID.concat(messageIndex.toString())
+  );
   // messageDataPoint.rawData = jsonIpfsData.isOk
   //   ? jsonToString(jsonIpfsData.value)
   //   : "";
   messageDataPoint.rawData = ipfsData ? ipfsData!.toString() : "";
   messageDataPoint.ipfsHash = ipfsHash;
   messageDataPoint.timestamp = timestamp;
-  messageDataPoint.oracleMessage = messageID;
+  messageDataPoint.oracleMessage = oracleMessageID;
 
   if (jsonIpfsData.value.kind == JSONValueKind.ARRAY) {
     let ipfsDataArray = jsonIpfsData.value.toArray();
     indexerDataPointCount = BigInt.fromI32(ipfsDataArray.length);
 
-    for (
-      let internalIndex = 0;
-      internalIndex < ipfsDataArray.length;
-      internalIndex++
-    ) {
-      let indexerDataPoint = new IndexerDataPoint(
-        [messageDataPoint.id, internalIndex.toString()].join("-")
-      );
-      indexerDataPoint.rawData = jsonObjectToString(
-        ipfsDataArray[internalIndex]
-      );
-      indexerDataPoint.messageDataPoint = messageDataPoint.id;
-      indexerDataPoint.save();
+    if (topic.includes("indexer")) {
+      for(let i = 0; i < ipfsDataArray.length; i++) {
+        createIndexerDataPoint(
+          [messageDataPoint.id, i.toString()].join("-"),
+          ipfsDataArray[i],
+          messageDataPoint.id
+        );
+      }
+    } else if (topic.includes("query")) {
+      for(let i = 0; i < ipfsDataArray.length; i++) {
+        createQueryDataPoint(
+          [messageDataPoint.id, i.toString()].join("-"),
+          ipfsDataArray[i],
+          messageDataPoint.id
+        );
+      }
+    } else {
+      log.warning("Topic doesn't include indexer or query reference", []);
     }
   } else {
     log.warning("IPFS data isn't an array for the MessageDataPoint", []);
@@ -105,6 +115,28 @@ export function processIpfsHash(
 
   messageDataPoint.indexerDataPointCount = indexerDataPointCount;
   messageDataPoint.save();
+}
+
+export function createIndexerDataPoint(
+  id: String,
+  jsonData: JSONValue,
+  messageID: String
+): void {
+  let indexerDataPoint = new IndexerDataPoint(id);
+  indexerDataPoint.rawData = jsonObjectToString(jsonData);
+  indexerDataPoint.messageDataPoint = messageID;
+  indexerDataPoint.save();
+}
+
+export function createQueryDataPoint(
+  id: String,
+  jsonData: JSONValue,
+  messageID: String
+): void {
+  let indexerDataPoint = new QueryDataPoint(id);
+  indexerDataPoint.rawData = jsonObjectToString(jsonData);
+  indexerDataPoint.messageDataPoint = messageID;
+  indexerDataPoint.save();
 }
 
 /**
