@@ -45,7 +45,7 @@ export function handleSubmitQoSPayload(call: SubmitQoSPayloadCall): void {
 function processPayload(payload: Bytes, messageID: String): void {
   let jsonData = json.try_fromBytes(payload);
 
-  if (jsonData.isOk) {
+  if (jsonData.isOk && !jsonData.isError) {
     if (jsonData.value.kind == JSONValueKind.ARRAY) {
       let jsonArray = jsonData.value.toArray();
       for (let index = 0; index < jsonArray.length; index++) {
@@ -66,6 +66,8 @@ function processPayload(payload: Bytes, messageID: String): void {
         processIpfsHash(hash, topic, timestamp, messageID, 0);
       }
     }
+  } else if (jsonData.isError) {
+    log.warning("JSON DATA ERROR", [])
   }
 }
 
@@ -95,7 +97,7 @@ export function processIpfsHash(
   messageDataPoint.timestamp = timestamp;
   messageDataPoint.oracleMessage = oracleMessageID;
 
-  if (jsonIpfsData.value.kind == JSONValueKind.ARRAY) {
+  if (jsonIpfsData.isOk && !jsonIpfsData.isError && jsonIpfsData.value.kind == JSONValueKind.ARRAY) {
     let ipfsDataArray = jsonIpfsData.value.toArray();
     indexerDataPointCount = BigInt.fromI32(ipfsDataArray.length);
 
@@ -118,6 +120,10 @@ export function processIpfsHash(
     } else {
       log.warning("Topic doesn't include indexer or query reference", []);
     }
+  } else if(!jsonIpfsData.isOk){
+    log.warning("IPFS data isn't ok. Hash: {}", [ipfsHash]);
+  } else if(jsonIpfsData.isError){
+    log.warning("IPFS data error. Hash: {}", [ipfsHash]);
   } else {
     log.warning("IPFS data isn't an array for the MessageDataPoint", []);
   }
