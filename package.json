@@ -4,7 +4,8 @@
   "scripts": {
     "codegen": "graph codegen",
     "build": "graph build",
-    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ craigtutterow/gateway-qos-oracle",
+    "deploy": "graph deploy --node https://api.thegraph.com/deploy/ juanmardefago/gateway-qos-oracle",
+    "deploy-official": "graph deploy --node https://api.thegraph.com/deploy/ graphprotocol/gateway-mips-qos-oracle",
     "create-local": "graph create --node http://localhost:8020/ craigtutterow/gateway-qos-oracle",
     "remove-local": "graph remove --node http://localhost:8020/ craigtutterow/gateway-qos-oracle",
     "deploy-local": "graph deploy --node http://localhost:8020/ --ipfs http://localhost:5001 craigtutterow/gateway-qos-oracle",
