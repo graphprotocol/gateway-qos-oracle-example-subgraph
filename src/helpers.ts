@@ -128,7 +128,8 @@ export function getAndUpdateIndexerDailyData(
   timestamp: BigInt
 ): IndexerDailyDataPoint {
   let dayNumber = timestamp.toI32() / SECONDS_PER_DAY - LAUNCH_DAY;
-  let id = compoundId(entity.id, BigInt.fromI32(dayNumber).toString());
+  let indexerSubgraphId = compoundId(entity.id, entity.subgraph_deployment_ipfs_hash)
+  let id = compoundId(indexerSubgraphId, BigInt.fromI32(dayNumber).toString());
   let dailyData = IndexerDailyDataPoint.load(id);
 
   if (dailyData == null) {
@@ -140,9 +141,11 @@ export function getAndUpdateIndexerDailyData(
     dailyData.dayEnd = dailyData.dayStart + BigInt.fromI32(SECONDS_PER_DAY);
     dailyData.dayNumber = dayNumber;
     dailyData.indexer = entity.indexer;
+    dailyData.subgraphDeployment = entity.subgraphDeployment;
     dailyData.dataPointCount = BIGINT_ZERO;
     dailyData.indexer_url = entity.indexer_url;
     dailyData.indexer_wallet = entity.indexer_wallet;
+    dailyData.subgraph_deployment_ipfs_hash = entity.subgraph_deployment_ipfs_hash;
     dailyData.query_count = BIGDECIMAL_ZERO;
     dailyData.start_epoch = entity.start_epoch;
   }

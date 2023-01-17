@@ -77,6 +77,8 @@ type IndexerDailyDataPoint @entity {
 
   indexer: Indexer
 
+  subgraphDeployment: SubgraphDeployment
+
   dayStart: BigInt!
   dayEnd: BigInt!
   dayNumber: Int!
@@ -98,6 +100,7 @@ type IndexerDailyDataPoint @entity {
   query_count: BigDecimal!
   start_epoch: BigDecimal!
   total_query_fees: BigDecimal!
+  subgraph_deployment_ipfs_hash: String!
 }
 
 type QueryDataPoint implements DataPoint @entity {
