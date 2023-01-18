@@ -1,14 +1,3 @@
-type GlobalState @entity {
-  "Singleton entity with id 0"
-  id: ID!
-
-  messageCount: BigInt!
-
-  dataPointCount: BigInt!
-
-  indexerDataPointCount: BigInt!
-}
-
 type OracleMessage @entity {
   "Transaction hash the message was posted"
   id: ID!

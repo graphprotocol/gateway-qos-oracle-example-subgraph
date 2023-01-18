@@ -13,8 +13,7 @@ import {
   OracleMessage,
   MessageDataPoint,
   IndexerDataPoint,
-  QueryDataPoint,
-  GlobalState
+  QueryDataPoint
 } from "../generated/schema";
 import { JSON_TOPICS, BIGINT_ONE, BIGINT_ZERO } from "./constants";
 import {
@@ -85,6 +84,10 @@ export function processIpfsHash(
   messageIndex: i32
 ): void {
   let ipfsData = ipfs.cat(ipfsHash);
+  if (ipfsData === null) {
+    log.warning("IPFS Data couldn't be retrieved. Hash: {}", [ipfsHash]);
+    return;
+  }
   let jsonIpfsData = json.try_fromBytes(ipfsData ? ipfsData! : Bytes.empty());
 
   let indexerDataPointCount = BIGINT_ZERO;
@@ -214,11 +217,17 @@ export function createIndexerDataPoint(
     );
     indexerDataPoint.total_query_fees = jsonValueToBigDecimal(total_query_fees);
 
-    if (indexerDataPoint.indexer_wallet != "") {
+    if (
+      indexerDataPoint.indexer_wallet != null &&
+      indexerDataPoint.indexer_wallet != ""
+    ) {
       indexerDataPoint.indexer = indexerDataPoint.indexer_wallet;
       createIndexer(indexerDataPoint.indexer!);
     }
-    if (indexerDataPoint.subgraph_deployment_ipfs_hash != "") {
+    if (
+      indexerDataPoint.subgraph_deployment_ipfs_hash != null &&
+      indexerDataPoint.subgraph_deployment_ipfs_hash != ""
+    ) {
       indexerDataPoint.subgraphDeployment =
         indexerDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(indexerDataPoint.subgraphDeployment!);
@@ -291,7 +300,10 @@ export function createQueryDataPoint(
       user_attributed_error_rate
     );
 
-    if (queryDataPoint.subgraph_deployment_ipfs_hash != "") {
+    if (
+      queryDataPoint.subgraph_deployment_ipfs_hash != null &&
+      queryDataPoint.subgraph_deployment_ipfs_hash != ""
+    ) {
       queryDataPoint.subgraphDeployment =
         queryDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(queryDataPoint.subgraphDeployment!);
