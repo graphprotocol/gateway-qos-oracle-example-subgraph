@@ -128,7 +128,7 @@ export function getAndUpdateIndexerDailyData(
   timestamp: BigInt
 ): IndexerDailyDataPoint {
   let dayNumber = timestamp.toI32() / SECONDS_PER_DAY - LAUNCH_DAY;
-  let indexerSubgraphId = compoundId(entity.id, entity.subgraph_deployment_ipfs_hash)
+  let indexerSubgraphId = compoundId(entity.indexer_wallet, entity.subgraph_deployment_ipfs_hash)
   let id = compoundId(indexerSubgraphId, BigInt.fromI32(dayNumber).toString());
   let dailyData = IndexerDailyDataPoint.load(id);
 
@@ -211,7 +211,7 @@ export function getAndUpdateQueryDailyData(
   timestamp: BigInt
 ): QueryDailyDataPoint {
   let dayNumber = timestamp.toI32() / SECONDS_PER_DAY - LAUNCH_DAY;
-  let id = compoundId(entity.id, BigInt.fromI32(dayNumber).toString());
+  let id = compoundId(entity.subgraph_deployment_ipfs_hash, BigInt.fromI32(dayNumber).toString());
   let dailyData = QueryDailyDataPoint.load(id);
 
   if (dailyData == null) {
