@@ -1,14 +1,3 @@
-type GlobalState @entity {
-  "Singleton entity with id 0"
-  id: ID!
-
-  messageCount: BigInt!
-
-  dataPointCount: BigInt!
-
-  indexerDataPointCount: BigInt!
-}
-
 type OracleMessage @entity {
   "Transaction hash the message was posted"
   id: ID!
@@ -72,6 +61,37 @@ type IndexerDataPoint implements DataPoint @entity {
   total_query_fees: BigDecimal!
 }
 
+type IndexerDailyDataPoint @entity {
+  id: ID!
+
+  indexer: Indexer
+
+  subgraphDeployment: SubgraphDeployment
+
+  dayStart: BigInt!
+  dayEnd: BigInt!
+  dayNumber: Int!
+  dataPointCount: BigInt!
+
+  indexer_url: String!
+  indexer_wallet: String!
+
+  # Parsed fields
+  avg_indexer_blocks_behind: BigDecimal!
+  avg_indexer_latency_ms: BigDecimal!
+  avg_query_fee: BigDecimal!
+  end_epoch: BigDecimal!
+  max_indexer_blocks_behind: BigDecimal!
+  max_indexer_latency_ms: BigDecimal!
+  max_query_fee: BigDecimal!
+  num_indexer_200_responses: BigDecimal!
+  proportion_indexer_200_responses: BigDecimal!
+  query_count: BigDecimal!
+  start_epoch: BigDecimal!
+  total_query_fees: BigDecimal!
+  subgraph_deployment_ipfs_hash: String!
+}
+
 type QueryDataPoint implements DataPoint @entity {
   id: ID!
 
@@ -97,16 +117,43 @@ type QueryDataPoint implements DataPoint @entity {
   user_attributed_error_rate: BigDecimal!
 }
 
+type QueryDailyDataPoint @entity {
+  id: ID!
+
+  dayStart: BigInt!
+  dayEnd: BigInt!
+  dayNumber: Int!
+  dataPointCount: BigInt!
+
+  subgraphDeployment: SubgraphDeployment
+
+  avg_gateway_latency_ms: BigDecimal!
+  avg_query_fee: BigDecimal!
+  end_epoch: BigDecimal!
+  gateway_query_success_rate: BigDecimal!
+  max_gateway_latency_ms: BigDecimal!
+  max_query_fee: BigDecimal!
+  most_recent_query_ts: BigDecimal!
+  query_count: BigDecimal!
+  start_epoch: BigDecimal!
+  total_query_fees: BigDecimal!
+  user_attributed_error_rate: BigDecimal!
+}
+
 type Indexer @entity {
   "ETH address"
   id: ID!
 
-  dataPoints: [IndexerDataPoint!]! @derivedFrom(field:"indexer")
+  dataPoints: [IndexerDataPoint!]! @derivedFrom(field: "indexer")
+
+  dailyDataPoints: [IndexerDataPoint!]! @derivedFrom(field: "indexer")
 }
 
 type SubgraphDeployment @entity {
   "IPFS Hash of the deployment"
   id: ID!
 
-  dataPoints: [QueryDataPoint!]! @derivedFrom(field:"subgraphDeployment")
+  dataPoints: [QueryDataPoint!]! @derivedFrom(field: "subgraphDeployment")
+
+  dailyDataPoints: [QueryDataPoint!]! @derivedFrom(field: "subgraphDeployment")
 }

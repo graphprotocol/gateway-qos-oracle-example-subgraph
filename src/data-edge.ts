@@ -13,8 +13,7 @@ import {
   OracleMessage,
   MessageDataPoint,
   IndexerDataPoint,
-  QueryDataPoint,
-  GlobalState
+  QueryDataPoint
 } from "../generated/schema";
 import { JSON_TOPICS, BIGINT_ONE, BIGINT_ZERO } from "./constants";
 import {
@@ -24,7 +23,9 @@ import {
   jsonValueToBigDecimal,
   jsonValueToString,
   createIndexer,
-  createDeployment
+  createDeployment,
+  getAndUpdateQueryDailyData,
+  getAndUpdateIndexerDailyData
 } from "./helpers";
 
 export function handleSubmitQoSPayload(call: SubmitQoSPayloadCall): void {
@@ -67,7 +68,7 @@ function processPayload(payload: Bytes, messageID: String): void {
       }
     }
   } else if (jsonData.isError) {
-    log.warning("JSON DATA ERROR", [])
+    log.warning("JSON DATA ERROR", []);
   }
 }
 
@@ -83,6 +84,10 @@ export function processIpfsHash(
   messageIndex: i32
 ): void {
   let ipfsData = ipfs.cat(ipfsHash);
+  if (ipfsData === null) {
+    log.warning("IPFS Data couldn't be retrieved. Hash: {}", [ipfsHash]);
+    return;
+  }
   let jsonIpfsData = json.try_fromBytes(ipfsData ? ipfsData! : Bytes.empty());
 
   let indexerDataPointCount = BIGINT_ZERO;
@@ -97,7 +102,11 @@ export function processIpfsHash(
   messageDataPoint.timestamp = timestamp;
   messageDataPoint.oracleMessage = oracleMessageID;
 
-  if (jsonIpfsData.isOk && !jsonIpfsData.isError && jsonIpfsData.value.kind == JSONValueKind.ARRAY) {
+  if (
+    jsonIpfsData.isOk &&
+    !jsonIpfsData.isError &&
+    jsonIpfsData.value.kind == JSONValueKind.ARRAY
+  ) {
     let ipfsDataArray = jsonIpfsData.value.toArray();
     indexerDataPointCount = BigInt.fromI32(ipfsDataArray.length);
 
@@ -106,7 +115,8 @@ export function processIpfsHash(
         createIndexerDataPoint(
           [messageDataPoint.id, i.toString()].join("-"),
           ipfsDataArray[i],
-          messageDataPoint.id
+          messageDataPoint.id,
+          timestamp
         );
       }
     } else if (topic.includes("query")) {
@@ -114,15 +124,16 @@ export function processIpfsHash(
         createQueryDataPoint(
           [messageDataPoint.id, i.toString()].join("-"),
           ipfsDataArray[i],
-          messageDataPoint.id
+          messageDataPoint.id,
+          timestamp
         );
       }
     } else {
       log.warning("Topic doesn't include indexer or query reference", []);
     }
-  } else if(!jsonIpfsData.isOk){
+  } else if (!jsonIpfsData.isOk) {
     log.warning("IPFS data isn't ok. Hash: {}", [ipfsHash]);
-  } else if(jsonIpfsData.isError){
+  } else if (jsonIpfsData.isError) {
     log.warning("IPFS data error. Hash: {}", [ipfsHash]);
   } else {
     log.warning("IPFS data isn't an array for the MessageDataPoint", []);
@@ -135,30 +146,39 @@ export function processIpfsHash(
 export function createIndexerDataPoint(
   id: String,
   jsonData: JSONValue,
-  messageID: String
+  messageID: String,
+  timestamp: BigInt
 ): void {
   let indexerDataPoint = new IndexerDataPoint(id);
   indexerDataPoint.rawData = jsonObjectToString(jsonData);
   indexerDataPoint.messageDataPoint = messageID;
 
   if (jsonData.kind == JSONValueKind.OBJECT) {
-    let jsonDataObject = jsonData.toObject()
-    let avg_indexer_blocks_behind = jsonDataObject.get("avg_indexer_blocks_behind");
+    let jsonDataObject = jsonData.toObject();
+    let avg_indexer_blocks_behind = jsonDataObject.get(
+      "avg_indexer_blocks_behind"
+    );
     let avg_indexer_latency_ms = jsonDataObject.get("avg_indexer_latency_ms");
     let avg_query_fee = jsonDataObject.get("avg_query_fee");
     let end_epoch = jsonDataObject.get("end_epoch");
     let indexer_url = jsonDataObject.get("indexer_url");
     let indexer_wallet = jsonDataObject.get("indexer_wallet");
-    let max_indexer_blocks_behind = jsonDataObject.get("max_indexer_blocks_behind");
+    let max_indexer_blocks_behind = jsonDataObject.get(
+      "max_indexer_blocks_behind"
+    );
     let max_indexer_latency_ms = jsonDataObject.get("max_indexer_latency_ms");
     let max_query_fee = jsonDataObject.get("max_query_fee");
-    let num_indexer_200_responses = jsonDataObject.get("num_indexer_200_responses");
+    let num_indexer_200_responses = jsonDataObject.get(
+      "num_indexer_200_responses"
+    );
     let proportion_indexer_200_responses = jsonDataObject.get(
       "proportion_indexer_200_responses"
     );
     let query_count = jsonDataObject.get("query_count");
     let start_epoch = jsonDataObject.get("start_epoch");
-    let stdev_indexer_latency_ms = jsonDataObject.get("stdev_indexer_latency_ms");
+    let stdev_indexer_latency_ms = jsonDataObject.get(
+      "stdev_indexer_latency_ms"
+    );
     let subgraph_deployment_ipfs_hash = jsonDataObject.get(
       "subgraph_deployment_ipfs_hash"
     );
@@ -197,11 +217,17 @@ export function createIndexerDataPoint(
     );
     indexerDataPoint.total_query_fees = jsonValueToBigDecimal(total_query_fees);
 
-    if (indexerDataPoint.indexer_wallet != "") {
+    if (
+      indexerDataPoint.indexer_wallet != null &&
+      indexerDataPoint.indexer_wallet != ""
+    ) {
       indexerDataPoint.indexer = indexerDataPoint.indexer_wallet;
       createIndexer(indexerDataPoint.indexer!);
     }
-    if (indexerDataPoint.subgraph_deployment_ipfs_hash != "") {
+    if (
+      indexerDataPoint.subgraph_deployment_ipfs_hash != null &&
+      indexerDataPoint.subgraph_deployment_ipfs_hash != ""
+    ) {
       indexerDataPoint.subgraphDeployment =
         indexerDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(indexerDataPoint.subgraphDeployment!);
@@ -209,34 +235,42 @@ export function createIndexerDataPoint(
   }
 
   indexerDataPoint.save();
+  getAndUpdateIndexerDailyData(indexerDataPoint, timestamp);
 }
 
 export function createQueryDataPoint(
   id: String,
   jsonData: JSONValue,
-  messageID: String
+  messageID: String,
+  timestamp: BigInt
 ): void {
   let queryDataPoint = new QueryDataPoint(id);
   queryDataPoint.rawData = jsonObjectToString(jsonData);
   queryDataPoint.messageDataPoint = messageID;
 
   if (jsonData.kind == JSONValueKind.OBJECT) {
-    let jsonDataObject = jsonData.toObject()
+    let jsonDataObject = jsonData.toObject();
     let avg_gateway_latency_ms = jsonDataObject.get("avg_gateway_latency_ms");
     let avg_query_fee = jsonDataObject.get("avg_query_fee");
     let end_epoch = jsonDataObject.get("end_epoch");
-    let gateway_query_success_rate = jsonDataObject.get("gateway_query_success_rate");
+    let gateway_query_success_rate = jsonDataObject.get(
+      "gateway_query_success_rate"
+    );
     let max_gateway_latency_ms = jsonDataObject.get("max_gateway_latency_ms");
     let max_query_fee = jsonDataObject.get("max_query_fee");
     let most_recent_query_ts = jsonDataObject.get("most_recent_query_ts");
     let query_count = jsonDataObject.get("query_count");
     let start_epoch = jsonDataObject.get("start_epoch");
-    let stdev_gateway_latency_ms = jsonDataObject.get("stdev_gateway_latency_ms");
+    let stdev_gateway_latency_ms = jsonDataObject.get(
+      "stdev_gateway_latency_ms"
+    );
     let subgraph_deployment_ipfs_hash = jsonDataObject.get(
       "subgraph_deployment_ipfs_hash"
     );
     let total_query_fees = jsonDataObject.get("total_query_fees");
-    let user_attributed_error_rate = jsonDataObject.get("user_attributed_error_rate");
+    let user_attributed_error_rate = jsonDataObject.get(
+      "user_attributed_error_rate"
+    );
 
     queryDataPoint.avg_gateway_latency_ms = jsonValueToBigDecimal(
       avg_gateway_latency_ms
@@ -266,7 +300,10 @@ export function createQueryDataPoint(
       user_attributed_error_rate
     );
 
-    if (queryDataPoint.subgraph_deployment_ipfs_hash != "") {
+    if (
+      queryDataPoint.subgraph_deployment_ipfs_hash != null &&
+      queryDataPoint.subgraph_deployment_ipfs_hash != ""
+    ) {
       queryDataPoint.subgraphDeployment =
         queryDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(queryDataPoint.subgraphDeployment!);
@@ -274,4 +311,5 @@ export function createQueryDataPoint(
   }
 
   queryDataPoint.save();
+  getAndUpdateQueryDailyData(queryDataPoint, timestamp);
 }
