@@ -24,8 +24,6 @@ import {
   jsonValueToString,
   createIndexer,
   createDeployment,
-  createNetwork,
-  createGateway,
   getAndUpdateQueryDailyData,
   getAndUpdateIndexerDailyData
 } from "./helpers";
@@ -238,17 +236,6 @@ export function createIndexerDataPoint(
         indexerDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(indexerDataPoint.subgraphDeployment!);
     }
-    if (indexerDataPoint.chain_id != null && indexerDataPoint.chain_id != "") {
-      indexerDataPoint.chain = indexerDataPoint.chain_id;
-      createNetwork(indexerDataPoint.chain!);
-    }
-    if (
-      indexerDataPoint.gateway_id != null &&
-      indexerDataPoint.gateway_id != ""
-    ) {
-      indexerDataPoint.gateway = indexerDataPoint.gateway_id;
-      createGateway(indexerDataPoint.gateway!);
-    }
   }
 
   indexerDataPoint.save();
@@ -328,14 +315,6 @@ export function createQueryDataPoint(
       queryDataPoint.subgraphDeployment =
         queryDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(queryDataPoint.subgraphDeployment!);
-    }
-    if (queryDataPoint.chain_id != null && queryDataPoint.chain_id != "") {
-      queryDataPoint.chain = queryDataPoint.chain_id;
-      createNetwork(queryDataPoint.chain!);
-    }
-    if (queryDataPoint.gateway_id != null && queryDataPoint.gateway_id != "") {
-      queryDataPoint.gateway = queryDataPoint.gateway_id;
-      createGateway(queryDataPoint.gateway!);
     }
   }
 

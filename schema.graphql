@@ -42,10 +42,6 @@ type IndexerDataPoint implements DataPoint @entity {
 
   subgraphDeployment: SubgraphDeployment
 
-  chain: Network
-
-  gateway: Gateway
-
   # Parsed fields
   avg_indexer_blocks_behind: BigDecimal!
   avg_indexer_latency_ms: BigDecimal!
@@ -73,10 +69,6 @@ type IndexerDailyDataPoint @entity {
   indexer: Indexer
 
   subgraphDeployment: SubgraphDeployment
-
-  chain: Network
-
-  gateway: Gateway
 
   dayStart: BigInt!
   dayEnd: BigInt!
@@ -113,10 +105,6 @@ type QueryDataPoint implements DataPoint @entity {
 
   subgraphDeployment: SubgraphDeployment
 
-  chain: Network
-
-  gateway: Gateway
-
   #Parsed fields
   avg_gateway_latency_ms: BigDecimal!
   avg_query_fee: BigDecimal!
@@ -144,10 +132,6 @@ type QueryDailyDataPoint @entity {
   dataPointCount: BigInt!
 
   subgraphDeployment: SubgraphDeployment
-
-  chain: Network
-
-  gateway: Gateway
 
   avg_gateway_latency_ms: BigDecimal!
   avg_query_fee: BigDecimal!
@@ -180,30 +164,4 @@ type SubgraphDeployment @entity {
   dataPoints: [QueryDataPoint!]! @derivedFrom(field: "subgraphDeployment")
 
   dailyDataPoints: [QueryDailyDataPoint!]! @derivedFrom(field: "subgraphDeployment")
-}
-
-type Network @entity {
-  "Indexing Network name"
-  id: ID!
-
-  indexerDataPoints: [IndexerDataPoint!]! @derivedFrom(field: "chain")
-
-  queryDataPoints: [QueryDataPoint!]! @derivedFrom(field: "chain")
-
-  indexerDailyDataPoints: [IndexerDailyDataPoint!]! @derivedFrom(field: "chain")
-
-  queryDailyDataPoints: [QueryDailyDataPoint!]! @derivedFrom(field: "chain")
-}
-
-type Gateway @entity {
-  "Gateway name"
-  id: ID!
-
-  indexerDataPoints: [IndexerDataPoint!]! @derivedFrom(field: "gateway")
-
-  queryDataPoints: [QueryDataPoint!]! @derivedFrom(field: "gateway")
-
-  indexerDailyDataPoints: [IndexerDailyDataPoint!]! @derivedFrom(field: "gateway")
-
-  queryDailyDataPoints: [QueryDailyDataPoint!]! @derivedFrom(field: "gateway")
 }
