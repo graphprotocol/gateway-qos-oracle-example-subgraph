@@ -24,6 +24,8 @@ import {
   jsonValueToString,
   createIndexer,
   createDeployment,
+  createNetwork,
+  createGateway,
   getAndUpdateQueryDailyData,
   getAndUpdateIndexerDailyData
 } from "./helpers";
@@ -183,6 +185,8 @@ export function createIndexerDataPoint(
       "subgraph_deployment_ipfs_hash"
     );
     let total_query_fees = jsonDataObject.get("total_query_fees");
+    let chain = jsonDataObject.get("chain");
+    let gateway = jsonDataObject.get("gateway_id");
 
     indexerDataPoint.avg_indexer_blocks_behind = jsonValueToBigDecimal(
       avg_indexer_blocks_behind
@@ -216,6 +220,8 @@ export function createIndexerDataPoint(
       subgraph_deployment_ipfs_hash
     );
     indexerDataPoint.total_query_fees = jsonValueToBigDecimal(total_query_fees);
+    indexerDataPoint.chain_id = jsonToString(chain);
+    indexerDataPoint.gateway_id = jsonToString(gateway);
 
     if (
       indexerDataPoint.indexer_wallet != null &&
@@ -231,6 +237,17 @@ export function createIndexerDataPoint(
       indexerDataPoint.subgraphDeployment =
         indexerDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(indexerDataPoint.subgraphDeployment!);
+    }
+    if (indexerDataPoint.chain_id != null && indexerDataPoint.chain_id != "") {
+      indexerDataPoint.chain = indexerDataPoint.chain_id;
+      createNetwork(indexerDataPoint.chain!);
+    }
+    if (
+      indexerDataPoint.gateway_id != null &&
+      indexerDataPoint.gateway_id != ""
+    ) {
+      indexerDataPoint.gateway = indexerDataPoint.gateway_id;
+      createGateway(indexerDataPoint.gateway!);
     }
   }
 
@@ -271,6 +288,8 @@ export function createQueryDataPoint(
     let user_attributed_error_rate = jsonDataObject.get(
       "user_attributed_error_rate"
     );
+    let chain = jsonDataObject.get("chain");
+    let gateway = jsonDataObject.get("gateway_id");
 
     queryDataPoint.avg_gateway_latency_ms = jsonValueToBigDecimal(
       avg_gateway_latency_ms
@@ -299,6 +318,8 @@ export function createQueryDataPoint(
     queryDataPoint.user_attributed_error_rate = jsonValueToBigDecimal(
       user_attributed_error_rate
     );
+    queryDataPoint.chain_id = jsonToString(chain);
+    queryDataPoint.gateway_id = jsonToString(gateway);
 
     if (
       queryDataPoint.subgraph_deployment_ipfs_hash != null &&
@@ -307,6 +328,14 @@ export function createQueryDataPoint(
       queryDataPoint.subgraphDeployment =
         queryDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(queryDataPoint.subgraphDeployment!);
+    }
+    if (queryDataPoint.chain_id != null && queryDataPoint.chain_id != "") {
+      queryDataPoint.chain = queryDataPoint.chain_id;
+      createNetwork(queryDataPoint.chain!);
+    }
+    if (queryDataPoint.gateway_id != null && queryDataPoint.gateway_id != "") {
+      queryDataPoint.gateway = queryDataPoint.gateway_id;
+      createGateway(queryDataPoint.gateway!);
     }
   }
 

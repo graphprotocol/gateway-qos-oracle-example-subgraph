@@ -8,6 +8,8 @@ import {
 import {
   Indexer,
   SubgraphDeployment,
+  Network,
+  Gateway,
   IndexerDataPoint,
   QueryDataPoint,
   IndexerDailyDataPoint,
@@ -117,6 +119,24 @@ export function createDeployment(id: String): SubgraphDeployment {
     entity.save();
   }
   return entity as SubgraphDeployment;
+}
+
+export function createNetwork(id: String): Network {
+  let entity = Network.load(id);
+  if (entity == null) {
+    entity = new Network(id);
+    entity.save();
+  }
+  return entity as Network;
+}
+
+export function createGateway(id: String): Gateway {
+  let entity = Gateway.load(id);
+  if (entity == null) {
+    entity = new Gateway(id);
+    entity.save();
+  }
+  return entity as Gateway;
 }
 
 export function compoundId(idA: string, idB: string): string {
