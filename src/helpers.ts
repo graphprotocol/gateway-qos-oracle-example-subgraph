@@ -148,6 +148,15 @@ export function getAndUpdateIndexerDailyData(
     dailyData.subgraph_deployment_ipfs_hash = entity.subgraph_deployment_ipfs_hash;
     dailyData.query_count = BIGDECIMAL_ZERO;
     dailyData.start_epoch = entity.start_epoch;
+    dailyData.avg_indexer_blocks_behind = BIGDECIMAL_ZERO;
+    dailyData.avg_indexer_latency_ms = BIGDECIMAL_ZERO;
+    dailyData.avg_query_fee = BIGDECIMAL_ZERO;
+    dailyData.max_indexer_blocks_behind = BIGDECIMAL_ZERO;
+    dailyData.max_indexer_latency_ms = BIGDECIMAL_ZERO;
+    dailyData.max_query_fee = BIGDECIMAL_ZERO;
+    dailyData.num_indexer_200_responses = BIGDECIMAL_ZERO;
+    dailyData.proportion_indexer_200_responses = BIGDECIMAL_ZERO;
+    dailyData.total_query_fees = BIGDECIMAL_ZERO;
   }
 
   let prevWeight = dailyData.query_count;
@@ -226,6 +235,13 @@ export function getAndUpdateQueryDailyData(
     dailyData.dataPointCount = BIGINT_ZERO;
     dailyData.query_count = BIGDECIMAL_ZERO;
     dailyData.start_epoch = entity.start_epoch;
+    dailyData.avg_gateway_latency_ms = BIGDECIMAL_ZERO;
+    dailyData.avg_query_fee = BIGDECIMAL_ZERO;
+    dailyData.gateway_query_success_rate = BIGDECIMAL_ZERO;
+    dailyData.max_gateway_latency_ms = BIGDECIMAL_ZERO;
+    dailyData.max_query_fee = BIGDECIMAL_ZERO;
+    dailyData.total_query_fees = BIGDECIMAL_ZERO;
+    dailyData.user_attributed_error_rate = BIGDECIMAL_ZERO;
   }
 
   let prevWeight = dailyData.query_count;

@@ -37,6 +37,7 @@ export function handleSubmitQoSPayload(call: SubmitQoSPayloadCall): void {
 
   entity.payload = call.inputs._payload.toString();
   entity.createdAt = call.block.timestamp;
+  entity.createdAtBlock = call.block.number;
 
   processPayload(call.inputs._payload, entity.id);
 
@@ -236,10 +237,10 @@ export function createIndexerDataPoint(
         indexerDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(indexerDataPoint.subgraphDeployment!);
     }
+    getAndUpdateIndexerDailyData(indexerDataPoint, timestamp);
   }
 
   indexerDataPoint.save();
-  getAndUpdateIndexerDailyData(indexerDataPoint, timestamp);
 }
 
 export function createQueryDataPoint(
@@ -316,8 +317,8 @@ export function createQueryDataPoint(
         queryDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(queryDataPoint.subgraphDeployment!);
     }
+    getAndUpdateQueryDailyData(queryDataPoint, timestamp);
   }
 
   queryDataPoint.save();
-  getAndUpdateQueryDailyData(queryDataPoint, timestamp);
 }

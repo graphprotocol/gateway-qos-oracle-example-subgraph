@@ -5,6 +5,8 @@ type OracleMessage @entity {
   payload: String!
   "Epoch timestamp (in seconds) the message was posted to chain"
   createdAt: BigInt!
+  "Block number the message was posted to chain"
+  createdAtBlock: BigInt!
 }
 
 type MessageDataPoint @entity {
