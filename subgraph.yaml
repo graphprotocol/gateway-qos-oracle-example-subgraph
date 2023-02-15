@@ -6,7 +6,7 @@ schema:
 dataSources:
   - kind: ethereum
     name: DataEdge
-    network: xdai
+    network: gnosis
     source:
       address: "0x5b4293b4c0f36cb5d4448950830bc777759b6c4f"
       abi: DataEdge
