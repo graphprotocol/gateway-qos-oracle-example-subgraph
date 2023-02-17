@@ -15,7 +15,7 @@ import {
   IndexerDataPoint,
   QueryDataPoint
 } from "../generated/schema";
-import { JSON_TOPICS, BIGINT_ONE, BIGINT_ZERO } from "./constants";
+import { JSON_TOPICS, BIGINT_ONE, BIGINT_ZERO, SUBMITTER_WHITELIST } from "./constants";
 import {
   jsonToString,
   jsonToBigInt,
@@ -37,8 +37,15 @@ export function handleSubmitQoSPayload(call: SubmitQoSPayloadCall): void {
 
   entity.payload = call.inputs._payload.toString();
   entity.createdAt = call.block.timestamp;
+  entity.createdAtBlock = call.block.number;
+  entity.valid = true;
 
-  processPayload(call.inputs._payload, entity.id);
+  if(SUBMITTER_WHITELIST.includes(call.from.toHexString())) {
+    processPayload(call.inputs._payload, entity.id);
+  } else {
+    entity.valid = false;
+    entity.errorMessage = `${call.from.toHexString()} is not a valid submitter.`
+  }
 
   entity.save();
 }
@@ -183,6 +190,8 @@ export function createIndexerDataPoint(
       "subgraph_deployment_ipfs_hash"
     );
     let total_query_fees = jsonDataObject.get("total_query_fees");
+    let chain = jsonDataObject.get("chain");
+    let gateway = jsonDataObject.get("gateway_id");
 
     indexerDataPoint.avg_indexer_blocks_behind = jsonValueToBigDecimal(
       avg_indexer_blocks_behind
@@ -216,6 +225,8 @@ export function createIndexerDataPoint(
       subgraph_deployment_ipfs_hash
     );
     indexerDataPoint.total_query_fees = jsonValueToBigDecimal(total_query_fees);
+    indexerDataPoint.chain_id = jsonToString(chain);
+    indexerDataPoint.gateway_id = jsonToString(gateway);
 
     if (
       indexerDataPoint.indexer_wallet != null &&
@@ -232,10 +243,10 @@ export function createIndexerDataPoint(
         indexerDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(indexerDataPoint.subgraphDeployment!);
     }
+    getAndUpdateIndexerDailyData(indexerDataPoint, timestamp);
   }
 
   indexerDataPoint.save();
-  getAndUpdateIndexerDailyData(indexerDataPoint, timestamp);
 }
 
 export function createQueryDataPoint(
@@ -271,6 +282,8 @@ export function createQueryDataPoint(
     let user_attributed_error_rate = jsonDataObject.get(
       "user_attributed_error_rate"
     );
+    let chain = jsonDataObject.get("chain");
+    let gateway = jsonDataObject.get("gateway_id");
 
     queryDataPoint.avg_gateway_latency_ms = jsonValueToBigDecimal(
       avg_gateway_latency_ms
@@ -299,6 +312,8 @@ export function createQueryDataPoint(
     queryDataPoint.user_attributed_error_rate = jsonValueToBigDecimal(
       user_attributed_error_rate
     );
+    queryDataPoint.chain_id = jsonToString(chain);
+    queryDataPoint.gateway_id = jsonToString(gateway);
 
     if (
       queryDataPoint.subgraph_deployment_ipfs_hash != null &&
@@ -308,8 +323,8 @@ export function createQueryDataPoint(
         queryDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(queryDataPoint.subgraphDeployment!);
     }
+    getAndUpdateQueryDailyData(queryDataPoint, timestamp);
   }
 
   queryDataPoint.save();
-  getAndUpdateQueryDailyData(queryDataPoint, timestamp);
 }

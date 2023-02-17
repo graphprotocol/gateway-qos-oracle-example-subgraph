@@ -5,6 +5,12 @@ type OracleMessage @entity {
   payload: String!
   "Epoch timestamp (in seconds) the message was posted to chain"
   createdAt: BigInt!
+  "Block number the message was posted to chain"
+  createdAtBlock: BigInt!
+  "Whether the message is valid or not"
+  valid: Boolean!
+  "Error message. Null if no error"
+  errorMessage: String
 }
 
 type MessageDataPoint @entity {
@@ -59,6 +65,8 @@ type IndexerDataPoint implements DataPoint @entity {
   stdev_indexer_latency_ms: BigDecimal!
   subgraph_deployment_ipfs_hash: String!
   total_query_fees: BigDecimal!
+  chain_id: String
+  gateway_id: String
 }
 
 type IndexerDailyDataPoint @entity {
@@ -90,6 +98,8 @@ type IndexerDailyDataPoint @entity {
   start_epoch: BigDecimal!
   total_query_fees: BigDecimal!
   subgraph_deployment_ipfs_hash: String!
+  chain_id: String
+  gateway_id: String
 }
 
 type QueryDataPoint implements DataPoint @entity {
@@ -115,6 +125,8 @@ type QueryDataPoint implements DataPoint @entity {
   subgraph_deployment_ipfs_hash: String!
   total_query_fees: BigDecimal!
   user_attributed_error_rate: BigDecimal!
+  chain_id: String
+  gateway_id: String
 }
 
 type QueryDailyDataPoint @entity {
@@ -138,6 +150,8 @@ type QueryDailyDataPoint @entity {
   start_epoch: BigDecimal!
   total_query_fees: BigDecimal!
   user_attributed_error_rate: BigDecimal!
+  chain_id: String
+  gateway_id: String
 }
 
 type Indexer @entity {
@@ -146,7 +160,7 @@ type Indexer @entity {
 
   dataPoints: [IndexerDataPoint!]! @derivedFrom(field: "indexer")
 
-  dailyDataPoints: [IndexerDataPoint!]! @derivedFrom(field: "indexer")
+  dailyDataPoints: [IndexerDailyDataPoint!]! @derivedFrom(field: "indexer")
 }
 
 type SubgraphDeployment @entity {
@@ -155,5 +169,5 @@ type SubgraphDeployment @entity {
 
   dataPoints: [QueryDataPoint!]! @derivedFrom(field: "subgraphDeployment")
 
-  dailyDataPoints: [QueryDataPoint!]! @derivedFrom(field: "subgraphDeployment")
+  dailyDataPoints: [QueryDailyDataPoint!]! @derivedFrom(field: "subgraphDeployment")
 }
