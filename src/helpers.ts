@@ -128,7 +128,14 @@ export function getAndUpdateIndexerDailyData(
   timestamp: BigInt
 ): IndexerDailyDataPoint {
   let dayNumber = timestamp.toI32() / SECONDS_PER_DAY - LAUNCH_DAY;
-  let indexerSubgraphId = compoundId(entity.indexer_wallet, entity.subgraph_deployment_ipfs_hash)
+  let baseId = compoundId(
+    entity.indexer_wallet,
+    entity.subgraph_deployment_ipfs_hash
+  );
+  let indexerSubgraphId =
+    entity.gateway_id != null && entity.gateway_id != ""
+      ? compoundId(baseId, entity.gateway_id!)
+      : baseId;
   let id = compoundId(indexerSubgraphId, BigInt.fromI32(dayNumber).toString());
   let dailyData = IndexerDailyDataPoint.load(id);
 
@@ -145,7 +152,8 @@ export function getAndUpdateIndexerDailyData(
     dailyData.dataPointCount = BIGINT_ZERO;
     dailyData.indexer_url = entity.indexer_url;
     dailyData.indexer_wallet = entity.indexer_wallet;
-    dailyData.subgraph_deployment_ipfs_hash = entity.subgraph_deployment_ipfs_hash;
+    dailyData.subgraph_deployment_ipfs_hash =
+      entity.subgraph_deployment_ipfs_hash;
     dailyData.query_count = BIGDECIMAL_ZERO;
     dailyData.start_epoch = entity.start_epoch;
     dailyData.avg_indexer_blocks_behind = BIGDECIMAL_ZERO;
@@ -157,6 +165,8 @@ export function getAndUpdateIndexerDailyData(
     dailyData.num_indexer_200_responses = BIGDECIMAL_ZERO;
     dailyData.proportion_indexer_200_responses = BIGDECIMAL_ZERO;
     dailyData.total_query_fees = BIGDECIMAL_ZERO;
+    dailyData.chain_id = entity.chain_id;
+    dailyData.gateway_id = entity.gateway_id;
   }
 
   let prevWeight = dailyData.query_count;
@@ -220,7 +230,11 @@ export function getAndUpdateQueryDailyData(
   timestamp: BigInt
 ): QueryDailyDataPoint {
   let dayNumber = timestamp.toI32() / SECONDS_PER_DAY - LAUNCH_DAY;
-  let id = compoundId(entity.subgraph_deployment_ipfs_hash, BigInt.fromI32(dayNumber).toString());
+  let baseId =
+    entity.gateway_id != null && entity.gateway_id != ""
+      ? compoundId(entity.subgraph_deployment_ipfs_hash, entity.gateway_id!)
+      : entity.subgraph_deployment_ipfs_hash;
+  let id = compoundId(baseId, BigInt.fromI32(dayNumber).toString());
   let dailyData = QueryDailyDataPoint.load(id);
 
   if (dailyData == null) {
@@ -242,6 +256,8 @@ export function getAndUpdateQueryDailyData(
     dailyData.max_query_fee = BIGDECIMAL_ZERO;
     dailyData.total_query_fees = BIGDECIMAL_ZERO;
     dailyData.user_attributed_error_rate = BIGDECIMAL_ZERO;
+    dailyData.chain_id = entity.chain_id;
+    dailyData.gateway_id = entity.gateway_id;
   }
 
   let prevWeight = dailyData.query_count;

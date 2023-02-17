@@ -7,6 +7,10 @@ type OracleMessage @entity {
   createdAt: BigInt!
   "Block number the message was posted to chain"
   createdAtBlock: BigInt!
+  "Whether the message is valid or not"
+  valid: Boolean!
+  "Error message. Null if no error"
+  errorMessage: String
 }
 
 type MessageDataPoint @entity {

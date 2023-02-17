@@ -15,7 +15,7 @@ import {
   IndexerDataPoint,
   QueryDataPoint
 } from "../generated/schema";
-import { JSON_TOPICS, BIGINT_ONE, BIGINT_ZERO } from "./constants";
+import { JSON_TOPICS, BIGINT_ONE, BIGINT_ZERO, SUBMITTER_WHITELIST } from "./constants";
 import {
   jsonToString,
   jsonToBigInt,
@@ -38,8 +38,14 @@ export function handleSubmitQoSPayload(call: SubmitQoSPayloadCall): void {
   entity.payload = call.inputs._payload.toString();
   entity.createdAt = call.block.timestamp;
   entity.createdAtBlock = call.block.number;
+  entity.valid = true;
 
-  processPayload(call.inputs._payload, entity.id);
+  if(SUBMITTER_WHITELIST.includes(call.from.toHexString())) {
+    processPayload(call.inputs._payload, entity.id);
+  } else {
+    entity.valid = false;
+    entity.errorMessage = `${call.from.toHexString()} is not a valid submitter.`
+  }
 
   entity.save();
 }

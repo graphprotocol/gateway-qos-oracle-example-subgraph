@@ -11,3 +11,5 @@ export let BIGDECIMAL_ZERO = BigDecimal.fromString('0');
 export let BIGDECIMAL_ONE = BigDecimal.fromString('1');
 export const LAUNCH_DAY = 18613 // 1608163200 / 86400. 1608163200 = 17 Dec 2020 00:00:00 GMT
 export const SECONDS_PER_DAY = 86400
+export let SUBMITTER_WHITELIST: Array<String> = [];
+SUBMITTER_WHITELIST.push("0x0b8cef00f90553b9535845be6abbe3797582d424")
