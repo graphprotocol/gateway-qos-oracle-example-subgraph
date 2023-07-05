@@ -243,7 +243,11 @@ export function createIndexerDataPoint(
         indexerDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(indexerDataPoint.subgraphDeployment!);
     }
-    getAndUpdateIndexerDailyData(indexerDataPoint, timestamp);
+    let dailyDataPoint = getAndUpdateIndexerDailyData(indexerDataPoint, timestamp);
+    indexerDataPoint.dayNumber = dailyDataPoint.dayNumber;
+    indexerDataPoint.dayStart = dailyDataPoint.dayStart;
+    indexerDataPoint.dayEnd = dailyDataPoint.dayEnd;
+    indexerDataPoint.dailyDataPoint = dailyDataPoint.id;
   }
 
   indexerDataPoint.save();
@@ -323,7 +327,11 @@ export function createQueryDataPoint(
         queryDataPoint.subgraph_deployment_ipfs_hash;
       createDeployment(queryDataPoint.subgraphDeployment!);
     }
-    getAndUpdateQueryDailyData(queryDataPoint, timestamp);
+    let dailyDataPoint = getAndUpdateQueryDailyData(queryDataPoint, timestamp);
+    queryDataPoint.dayNumber = dailyDataPoint.dayNumber;
+    queryDataPoint.dayStart = dailyDataPoint.dayStart;
+    queryDataPoint.dayEnd = dailyDataPoint.dayEnd;
+    queryDataPoint.dailyDataPoint = dailyDataPoint.id;
   }
 
   queryDataPoint.save();

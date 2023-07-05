@@ -48,6 +48,13 @@ type IndexerDataPoint implements DataPoint @entity {
 
   subgraphDeployment: SubgraphDeployment
 
+  dailyDataPoint: IndexerDailyDataPoint
+
+  # Copied from the daily data point entity
+  dayStart: BigInt!
+  dayEnd: BigInt!
+  dayNumber: Int!
+
   # Parsed fields
   avg_indexer_blocks_behind: BigDecimal!
   avg_indexer_latency_ms: BigDecimal!
@@ -75,6 +82,8 @@ type IndexerDailyDataPoint @entity {
   indexer: Indexer
 
   subgraphDeployment: SubgraphDeployment
+
+  dataPoints: [IndexerDataPoint!]! @derivedFrom(field:"dailyDataPoint")
 
   dayStart: BigInt!
   dayEnd: BigInt!
@@ -111,6 +120,13 @@ type QueryDataPoint implements DataPoint @entity {
 
   subgraphDeployment: SubgraphDeployment
 
+  dailyDataPoint: QueryDailyDataPoint
+
+  # Copied from the daily data point entity
+  dayStart: BigInt!
+  dayEnd: BigInt!
+  dayNumber: Int!
+
   #Parsed fields
   avg_gateway_latency_ms: BigDecimal!
   avg_query_fee: BigDecimal!
@@ -138,6 +154,8 @@ type QueryDailyDataPoint @entity {
   dataPointCount: BigInt!
 
   subgraphDeployment: SubgraphDeployment
+
+  dataPoints: [QueryDataPoint!]! @derivedFrom(field:"dailyDataPoint")
 
   avg_gateway_latency_ms: BigDecimal!
   avg_query_fee: BigDecimal!
