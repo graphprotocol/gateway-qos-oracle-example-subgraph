@@ -8,8 +8,9 @@ import {
 import {
   Indexer,
   SubgraphDeployment,
-  IndexerDataPoint,
+  AllocationDataPoint,
   QueryDataPoint,
+  AllocationDailyDataPoint,
   IndexerDailyDataPoint,
   QueryDailyDataPoint
 } from "../generated/schema";
@@ -123,10 +124,10 @@ export function compoundId(idA: string, idB: string): string {
   return idA.concat("-").concat(idB);
 }
 
-export function getAndUpdateIndexerDailyData(
-  entity: IndexerDataPoint,
+export function getAndUpdateAllocationDailyData(
+  entity: AllocationDataPoint,
   timestamp: BigInt
-): IndexerDailyDataPoint {
+): AllocationDailyDataPoint {
   let dayNumber = timestamp.toI32() / SECONDS_PER_DAY - LAUNCH_DAY;
   let baseId = compoundId(
     entity.indexer_wallet,
@@ -137,15 +138,15 @@ export function getAndUpdateIndexerDailyData(
       ? compoundId(baseId, entity.gateway_id!)
       : baseId;
   let id = compoundId(indexerSubgraphId, BigInt.fromI32(dayNumber).toString());
-  let dailyData = IndexerDailyDataPoint.load(id);
+  let dailyData = AllocationDailyDataPoint.load(id);
 
   if (dailyData == null) {
-    dailyData = new IndexerDailyDataPoint(id);
+    dailyData = new AllocationDailyDataPoint(id);
 
     dailyData.dayStart = BigInt.fromI32(
       (timestamp.toI32() / SECONDS_PER_DAY) * SECONDS_PER_DAY
     );
-    dailyData.dayEnd = dailyData.dayStart + BigInt.fromI32(SECONDS_PER_DAY);
+    dailyData.dayEnd = dailyData.dayStart.plus(BigInt.fromI32(SECONDS_PER_DAY));
     dailyData.dayNumber = dayNumber;
     dailyData.indexer = entity.indexer;
     dailyData.subgraphDeployment = entity.subgraphDeployment;
@@ -172,7 +173,7 @@ export function getAndUpdateIndexerDailyData(
   let prevWeight = dailyData.query_count;
 
   dailyData.dataPointCount = dailyData.dataPointCount.plus(BIGINT_ONE);
-  dailyData.query_count = dailyData.query_count + entity.query_count;
+  dailyData.query_count = dailyData.query_count.plus(entity.query_count);
 
   dailyData.avg_indexer_blocks_behind = bdWeightedAverage(
     [
@@ -209,7 +210,7 @@ export function getAndUpdateIndexerDailyData(
     entity.max_query_fee
   );
   dailyData.num_indexer_200_responses =
-    dailyData.num_indexer_200_responses + entity.num_indexer_200_responses;
+    dailyData.num_indexer_200_responses.plus(entity.num_indexer_200_responses);
   dailyData.proportion_indexer_200_responses = bdWeightedAverage(
     [
       [dailyData.proportion_indexer_200_responses, prevWeight],
@@ -218,7 +219,105 @@ export function getAndUpdateIndexerDailyData(
     dailyData.query_count
   );
   dailyData.total_query_fees =
-    dailyData.total_query_fees + entity.total_query_fees;
+    dailyData.total_query_fees.plus(entity.total_query_fees);
+
+  dailyData.save();
+
+  return dailyData as AllocationDailyDataPoint;
+}
+
+export function getAndUpdateIndexerDailyData(
+  entity: AllocationDataPoint,
+  timestamp: BigInt
+): IndexerDailyDataPoint {
+  let dayNumber = timestamp.toI32() / SECONDS_PER_DAY - LAUNCH_DAY;
+  let baseId = entity.indexer_wallet
+  let indexerId =
+    entity.gateway_id != null && entity.gateway_id != ""
+      ? compoundId(baseId, entity.gateway_id!)
+      : baseId;
+  let id = compoundId(indexerId, BigInt.fromI32(dayNumber).toString());
+  let dailyData = IndexerDailyDataPoint.load(id);
+
+  if (dailyData == null) {
+    dailyData = new IndexerDailyDataPoint(id);
+
+    dailyData.dayStart = BigInt.fromI32(
+      (timestamp.toI32() / SECONDS_PER_DAY) * SECONDS_PER_DAY
+    );
+    dailyData.dayEnd = dailyData.dayStart.plus(BigInt.fromI32(SECONDS_PER_DAY));
+    dailyData.dayNumber = dayNumber;
+    dailyData.indexer = entity.indexer;
+    dailyData.dataPointCount = BIGINT_ZERO;
+    dailyData.indexer_url = entity.indexer_url;
+    dailyData.indexer_wallet = entity.indexer_wallet;
+    dailyData.subgraph_deployment_ipfs_hash =
+      entity.subgraph_deployment_ipfs_hash;
+    dailyData.query_count = BIGDECIMAL_ZERO;
+    dailyData.start_epoch = entity.start_epoch;
+    dailyData.avg_indexer_blocks_behind = BIGDECIMAL_ZERO;
+    dailyData.avg_indexer_latency_ms = BIGDECIMAL_ZERO;
+    dailyData.avg_query_fee = BIGDECIMAL_ZERO;
+    dailyData.max_indexer_blocks_behind = BIGDECIMAL_ZERO;
+    dailyData.max_indexer_latency_ms = BIGDECIMAL_ZERO;
+    dailyData.max_query_fee = BIGDECIMAL_ZERO;
+    dailyData.num_indexer_200_responses = BIGDECIMAL_ZERO;
+    dailyData.proportion_indexer_200_responses = BIGDECIMAL_ZERO;
+    dailyData.total_query_fees = BIGDECIMAL_ZERO;
+    dailyData.chain_id = entity.chain_id;
+    dailyData.gateway_id = entity.gateway_id;
+  }
+
+  let prevWeight = dailyData.query_count;
+
+  dailyData.dataPointCount = dailyData.dataPointCount.plus(BIGINT_ONE);
+  dailyData.query_count = dailyData.query_count.plus(entity.query_count);
+
+  dailyData.avg_indexer_blocks_behind = bdWeightedAverage(
+    [
+      [dailyData.avg_indexer_blocks_behind, prevWeight],
+      [entity.avg_indexer_blocks_behind, entity.query_count]
+    ],
+    dailyData.query_count
+  );
+  dailyData.avg_indexer_latency_ms = bdWeightedAverage(
+    [
+      [dailyData.avg_indexer_latency_ms, prevWeight],
+      [entity.avg_indexer_latency_ms, entity.query_count]
+    ],
+    dailyData.query_count
+  );
+  dailyData.avg_query_fee = bdWeightedAverage(
+    [
+      [dailyData.avg_query_fee, prevWeight],
+      [entity.avg_query_fee, entity.query_count]
+    ],
+    dailyData.query_count
+  );
+  dailyData.end_epoch = entity.end_epoch;
+  dailyData.max_indexer_blocks_behind = maxBD(
+    dailyData.max_indexer_blocks_behind,
+    entity.max_indexer_blocks_behind
+  );
+  dailyData.max_indexer_latency_ms = maxBD(
+    dailyData.max_indexer_latency_ms,
+    entity.max_indexer_latency_ms
+  );
+  dailyData.max_query_fee = maxBD(
+    dailyData.max_query_fee,
+    entity.max_query_fee
+  );
+  dailyData.num_indexer_200_responses =
+    dailyData.num_indexer_200_responses.plus(entity.num_indexer_200_responses);
+  dailyData.proportion_indexer_200_responses = bdWeightedAverage(
+    [
+      [dailyData.proportion_indexer_200_responses, prevWeight],
+      [entity.proportion_indexer_200_responses, entity.query_count]
+    ],
+    dailyData.query_count
+  );
+  dailyData.total_query_fees =
+    dailyData.total_query_fees.plus(entity.total_query_fees);
 
   dailyData.save();
 
@@ -243,7 +342,7 @@ export function getAndUpdateQueryDailyData(
     dailyData.dayStart = BigInt.fromI32(
       (timestamp.toI32() / SECONDS_PER_DAY) * SECONDS_PER_DAY
     );
-    dailyData.dayEnd = dailyData.dayStart + BigInt.fromI32(SECONDS_PER_DAY);
+    dailyData.dayEnd = dailyData.dayStart.plus(BigInt.fromI32(SECONDS_PER_DAY));
     dailyData.dayNumber = dayNumber;
     dailyData.subgraphDeployment = entity.subgraphDeployment;
     dailyData.dataPointCount = BIGINT_ZERO;
@@ -263,7 +362,7 @@ export function getAndUpdateQueryDailyData(
   let prevWeight = dailyData.query_count;
 
   dailyData.dataPointCount = dailyData.dataPointCount.plus(BIGINT_ONE);
-  dailyData.query_count = dailyData.query_count + entity.query_count;
+  dailyData.query_count = dailyData.query_count.plus(entity.query_count);
 
   dailyData.avg_gateway_latency_ms = bdWeightedAverage(
     [
@@ -297,7 +396,7 @@ export function getAndUpdateQueryDailyData(
   );
   dailyData.most_recent_query_ts = entity.most_recent_query_ts;
   dailyData.total_query_fees =
-    dailyData.total_query_fees + entity.total_query_fees;
+    dailyData.total_query_fees.plus(entity.total_query_fees);
   dailyData.user_attributed_error_rate = bdWeightedAverage(
     [
       [dailyData.user_attributed_error_rate, prevWeight],

@@ -12,7 +12,7 @@ import { DataEdge, SubmitQoSPayloadCall } from "../generated/DataEdge/DataEdge";
 import {
   OracleMessage,
   MessageDataPoint,
-  IndexerDataPoint,
+  AllocationDataPoint,
   QueryDataPoint
 } from "../generated/schema";
 import { JSON_TOPICS, BIGINT_ONE, BIGINT_ZERO, SUBMITTER_WHITELIST } from "./constants";
@@ -25,7 +25,8 @@ import {
   createIndexer,
   createDeployment,
   getAndUpdateQueryDailyData,
-  getAndUpdateIndexerDailyData
+  getAndUpdateIndexerDailyData,
+  getAndUpdateAllocationDailyData
 } from "./helpers";
 
 export function handleSubmitQoSPayload(call: SubmitQoSPayloadCall): void {
@@ -97,7 +98,8 @@ export function processIpfsHash(
   }
   let jsonIpfsData = json.try_fromBytes(ipfsData ? ipfsData! : Bytes.empty());
 
-  let indexerDataPointCount = BIGINT_ZERO;
+  let allocationDataPointCount = BIGINT_ZERO;
+  let queryDataPointCount = BIGINT_ZERO;
   let messageDataPoint = new MessageDataPoint(
     oracleMessageID.concat(messageIndex.toString())
   );
@@ -115,17 +117,17 @@ export function processIpfsHash(
     jsonIpfsData.value.kind == JSONValueKind.ARRAY
   ) {
     let ipfsDataArray = jsonIpfsData.value.toArray();
-    indexerDataPointCount = BigInt.fromI32(ipfsDataArray.length);
-
+    
     if (topic.includes("indexer")) {
       for (let i = 0; i < ipfsDataArray.length; i++) {
-        createIndexerDataPoint(
+        createAllocationDataPoint(
           [messageDataPoint.id, i.toString()].join("-"),
           ipfsDataArray[i],
           messageDataPoint.id,
           timestamp
-        );
-      }
+          );
+        }
+      allocationDataPointCount = BigInt.fromI32(ipfsDataArray.length);
     } else if (topic.includes("query")) {
       for (let i = 0; i < ipfsDataArray.length; i++) {
         createQueryDataPoint(
@@ -133,7 +135,8 @@ export function processIpfsHash(
           ipfsDataArray[i],
           messageDataPoint.id,
           timestamp
-        );
+          );
+        queryDataPointCount = BigInt.fromI32(ipfsDataArray.length);
       }
     } else {
       log.warning("Topic doesn't include indexer or query reference", []);
@@ -146,19 +149,20 @@ export function processIpfsHash(
     log.warning("IPFS data isn't an array for the MessageDataPoint", []);
   }
 
-  messageDataPoint.indexerDataPointCount = indexerDataPointCount;
+  messageDataPoint.allocationDataPointCount = allocationDataPointCount;
+  messageDataPoint.queryDataPointCount = queryDataPointCount;
   messageDataPoint.save();
 }
 
-export function createIndexerDataPoint(
+export function createAllocationDataPoint(
   id: String,
   jsonData: JSONValue,
   messageID: String,
   timestamp: BigInt
 ): void {
-  let indexerDataPoint = new IndexerDataPoint(id);
-  indexerDataPoint.rawData = jsonObjectToString(jsonData);
-  indexerDataPoint.messageDataPoint = messageID;
+  let allocationDataPoint = new AllocationDataPoint(id);
+  allocationDataPoint.rawData = jsonObjectToString(jsonData);
+  allocationDataPoint.messageDataPoint = messageID;
 
   if (jsonData.kind == JSONValueKind.OBJECT) {
     let jsonDataObject = jsonData.toObject();
@@ -193,64 +197,66 @@ export function createIndexerDataPoint(
     let chain = jsonDataObject.get("chain");
     let gateway = jsonDataObject.get("gateway_id");
 
-    indexerDataPoint.avg_indexer_blocks_behind = jsonValueToBigDecimal(
+    allocationDataPoint.avg_indexer_blocks_behind = jsonValueToBigDecimal(
       avg_indexer_blocks_behind
     );
-    indexerDataPoint.avg_indexer_latency_ms = jsonValueToBigDecimal(
+    allocationDataPoint.avg_indexer_latency_ms = jsonValueToBigDecimal(
       avg_indexer_latency_ms
     );
-    indexerDataPoint.avg_query_fee = jsonValueToBigDecimal(avg_query_fee);
-    indexerDataPoint.end_epoch = jsonValueToBigDecimal(end_epoch);
-    indexerDataPoint.indexer_url = jsonToString(indexer_url);
-    indexerDataPoint.indexer_wallet = jsonToString(indexer_wallet);
-    indexerDataPoint.max_indexer_blocks_behind = jsonValueToBigDecimal(
+    allocationDataPoint.avg_query_fee = jsonValueToBigDecimal(avg_query_fee);
+    allocationDataPoint.end_epoch = jsonValueToBigDecimal(end_epoch);
+    allocationDataPoint.indexer_url = jsonToString(indexer_url);
+    allocationDataPoint.indexer_wallet = jsonToString(indexer_wallet);
+    allocationDataPoint.max_indexer_blocks_behind = jsonValueToBigDecimal(
       max_indexer_blocks_behind
     );
-    indexerDataPoint.max_indexer_latency_ms = jsonValueToBigDecimal(
+    allocationDataPoint.max_indexer_latency_ms = jsonValueToBigDecimal(
       max_indexer_latency_ms
     );
-    indexerDataPoint.max_query_fee = jsonValueToBigDecimal(max_query_fee);
-    indexerDataPoint.num_indexer_200_responses = jsonValueToBigDecimal(
+    allocationDataPoint.max_query_fee = jsonValueToBigDecimal(max_query_fee);
+    allocationDataPoint.num_indexer_200_responses = jsonValueToBigDecimal(
       num_indexer_200_responses
     );
-    indexerDataPoint.proportion_indexer_200_responses = jsonValueToBigDecimal(
+    allocationDataPoint.proportion_indexer_200_responses = jsonValueToBigDecimal(
       proportion_indexer_200_responses
     );
-    indexerDataPoint.query_count = jsonValueToBigDecimal(query_count);
-    indexerDataPoint.start_epoch = jsonValueToBigDecimal(start_epoch);
-    indexerDataPoint.stdev_indexer_latency_ms = jsonValueToBigDecimal(
+    allocationDataPoint.query_count = jsonValueToBigDecimal(query_count);
+    allocationDataPoint.start_epoch = jsonValueToBigDecimal(start_epoch);
+    allocationDataPoint.stdev_indexer_latency_ms = jsonValueToBigDecimal(
       stdev_indexer_latency_ms
     );
-    indexerDataPoint.subgraph_deployment_ipfs_hash = jsonToString(
+    allocationDataPoint.subgraph_deployment_ipfs_hash = jsonToString(
       subgraph_deployment_ipfs_hash
     );
-    indexerDataPoint.total_query_fees = jsonValueToBigDecimal(total_query_fees);
-    indexerDataPoint.chain_id = jsonToString(chain);
-    indexerDataPoint.gateway_id = jsonToString(gateway);
+    allocationDataPoint.total_query_fees = jsonValueToBigDecimal(total_query_fees);
+    allocationDataPoint.chain_id = jsonToString(chain);
+    allocationDataPoint.gateway_id = jsonToString(gateway);
 
     if (
-      indexerDataPoint.indexer_wallet != null &&
-      indexerDataPoint.indexer_wallet != ""
+      allocationDataPoint.indexer_wallet != null &&
+      allocationDataPoint.indexer_wallet != ""
     ) {
-      indexerDataPoint.indexer = indexerDataPoint.indexer_wallet;
-      createIndexer(indexerDataPoint.indexer!);
+      allocationDataPoint.indexer = allocationDataPoint.indexer_wallet;
+      createIndexer(allocationDataPoint.indexer!);
     }
     if (
-      indexerDataPoint.subgraph_deployment_ipfs_hash != null &&
-      indexerDataPoint.subgraph_deployment_ipfs_hash != ""
+      allocationDataPoint.subgraph_deployment_ipfs_hash != null &&
+      allocationDataPoint.subgraph_deployment_ipfs_hash != ""
     ) {
-      indexerDataPoint.subgraphDeployment =
-        indexerDataPoint.subgraph_deployment_ipfs_hash;
-      createDeployment(indexerDataPoint.subgraphDeployment!);
+      allocationDataPoint.subgraphDeployment =
+        allocationDataPoint.subgraph_deployment_ipfs_hash;
+      createDeployment(allocationDataPoint.subgraphDeployment!);
     }
-    let dailyDataPoint = getAndUpdateIndexerDailyData(indexerDataPoint, timestamp);
-    indexerDataPoint.dayNumber = dailyDataPoint.dayNumber;
-    indexerDataPoint.dayStart = dailyDataPoint.dayStart;
-    indexerDataPoint.dayEnd = dailyDataPoint.dayEnd;
-    indexerDataPoint.dailyDataPoint = dailyDataPoint.id;
+    let allocationDailyDataPoint = getAndUpdateAllocationDailyData(allocationDataPoint, timestamp);
+    let indexerDailyDataPoint = getAndUpdateIndexerDailyData(allocationDataPoint, timestamp);
+    allocationDataPoint.dayNumber = allocationDailyDataPoint.dayNumber;
+    allocationDataPoint.dayStart = allocationDailyDataPoint.dayStart;
+    allocationDataPoint.dayEnd = allocationDailyDataPoint.dayEnd;
+    allocationDataPoint.allocationDailyDataPoint = allocationDailyDataPoint.id;
+    allocationDataPoint.indexerDailyDataPoint = indexerDailyDataPoint.id;
   }
 
-  indexerDataPoint.save();
+  allocationDataPoint.save();
 }
 
 export function createQueryDataPoint(
