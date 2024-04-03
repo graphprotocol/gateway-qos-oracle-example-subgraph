@@ -20,7 +20,9 @@ type MessageDataPoint @entity {
 
   ipfsHash: String!
 
-  indexerDataPointCount: BigInt!
+  allocationDataPointCount: BigInt!
+
+  queryDataPointCount: BigInt!
 
   timestamp: BigInt!
 
@@ -37,7 +39,41 @@ interface DataPoint @entity {
   rawData: String!
 }
 
-type IndexerDataPoint implements DataPoint @entity {
+# This entity represents a GATEWAY wide daily data point for all qos metrics for a given indexer
+type IndexerDailyDataPoint @entity {
+  id: ID!
+
+  indexer: Indexer
+
+  dataPoints: [AllocationDataPoint!]! @derivedFrom(field:"indexerDailyDataPoint")
+
+  dayStart: BigInt!
+  dayEnd: BigInt!
+  dayNumber: Int!
+  dataPointCount: BigInt!
+
+  indexer_url: String!
+  indexer_wallet: String!
+
+  # Parsed fields
+  avg_indexer_blocks_behind: BigDecimal!
+  avg_indexer_latency_ms: BigDecimal!
+  avg_query_fee: BigDecimal!
+  end_epoch: BigDecimal!
+  max_indexer_blocks_behind: BigDecimal!
+  max_indexer_latency_ms: BigDecimal!
+  max_query_fee: BigDecimal!
+  num_indexer_200_responses: BigDecimal!
+  proportion_indexer_200_responses: BigDecimal!
+  query_count: BigDecimal!
+  start_epoch: BigDecimal!
+  total_query_fees: BigDecimal!
+  subgraph_deployment_ipfs_hash: String!
+  chain_id: String
+  gateway_id: String
+}
+
+type AllocationDataPoint implements DataPoint @entity {
   id: ID!
 
   messageDataPoint: MessageDataPoint!
@@ -48,7 +84,9 @@ type IndexerDataPoint implements DataPoint @entity {
 
   subgraphDeployment: SubgraphDeployment
 
-  dailyDataPoint: IndexerDailyDataPoint
+  allocationDailyDataPoint: AllocationDailyDataPoint
+
+  indexerDailyDataPoint: IndexerDailyDataPoint
 
   # Copied from the daily data point entity
   dayStart: BigInt!
@@ -76,14 +114,15 @@ type IndexerDataPoint implements DataPoint @entity {
   gateway_id: String
 }
 
-type IndexerDailyDataPoint @entity {
+# This entity represents the GATEWAY wide daily data point for all qos metrics for a given indexer on a particular deployment
+type AllocationDailyDataPoint @entity {
   id: ID!
 
   indexer: Indexer
 
   subgraphDeployment: SubgraphDeployment
 
-  dataPoints: [IndexerDataPoint!]! @derivedFrom(field:"dailyDataPoint")
+  dataPoints: [AllocationDataPoint!]! @derivedFrom(field:"allocationDailyDataPoint")
 
   dayStart: BigInt!
   dayEnd: BigInt!
@@ -145,6 +184,7 @@ type QueryDataPoint implements DataPoint @entity {
   gateway_id: String
 }
 
+# This entity represents the GATEWAY wide daily data qos metrics for a given deployment
 type QueryDailyDataPoint @entity {
   id: ID!
 
@@ -176,16 +216,22 @@ type Indexer @entity {
   "ETH address"
   id: ID!
 
-  dataPoints: [IndexerDataPoint!]! @derivedFrom(field: "indexer")
+  indexerDailyDataPoints: [IndexerDailyDataPoint!]! @derivedFrom(field: "indexer")
 
-  dailyDataPoints: [IndexerDailyDataPoint!]! @derivedFrom(field: "indexer")
+  allocationDataPoints: [AllocationDataPoint!]! @derivedFrom(field: "indexer")
+
+  allocationDailyDataPoints: [AllocationDailyDataPoint!]! @derivedFrom(field: "indexer")
 }
 
 type SubgraphDeployment @entity {
   "IPFS Hash of the deployment"
   id: ID!
 
-  dataPoints: [QueryDataPoint!]! @derivedFrom(field: "subgraphDeployment")
+  queryDataPoints: [QueryDataPoint!]! @derivedFrom(field: "subgraphDeployment")
 
-  dailyDataPoints: [QueryDailyDataPoint!]! @derivedFrom(field: "subgraphDeployment")
+  queryDailyDataPoints: [QueryDailyDataPoint!]! @derivedFrom(field: "subgraphDeployment")
+
+  allocationDataPoints: [AllocationDataPoint!]! @derivedFrom(field: "subgraphDeployment")
+
+  allocationDailyDataPoints: [AllocationDailyDataPoint!]! @derivedFrom(field: "subgraphDeployment")
 }
